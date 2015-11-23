@@ -1,0 +1,6 @@
+---
+default: --format html --out=public/index.html -t ~@wip -t ~@ignore -t ~@pending
+include-disabled: --format html --out=public/index.html
+local: --color --format pretty
+ipaccess: --color --format pretty --tags @ipaccess
+summary: --dry-run --format SummaryFormatter

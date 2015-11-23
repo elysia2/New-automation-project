@@ -1,0 +1,8 @@
+---
+users:
+  default_user:
+    username: smokeytester1@gmail.com
+    password: 5m0k3yt35t3r1
+  my_user:
+    username: your personal account
+    password: abc123
