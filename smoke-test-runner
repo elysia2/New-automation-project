@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+require 'optparse'
+
+class SmokeTestRunner
+  PATH        = File.symlink?(__FILE__) ? File.readlink(__FILE__) : __FILE__
+  SCRIPT_ROOT = File.dirname(PATH)
+
+  def self.main
+    self.new.run
+  end
+
+  def initialize
+    @opts = {
+      target:  'test',
+      debug:   false,
+      update:  false,
+      list:    false,
+      feature: nil,
+      profile: 'default',
+      user:    'default_user'
+    }
+  end
+
+  def parse_opts
+    OptionParser.new do |opts|
+      opts.banner = "Usage: #{$0} [options]"
+
+      opts.on('-h', '--help') do
+        puts <<-EOH
+       #{$0} [[opts]]
+
+        -t TARGET  --target TARGET    Target site (local, test, live) - default=#{@opts[:target]}
+        -g         --git-update       Update git repository - default=false
+        -d         --debug            Debug browser calls - default=false
+        -l         --list             Prints a list of all the features
+        -f         --feature FEATURE  Test a single feature
+        -p PROFILE --profile PROFILE  default: only active features. To launch all features use: include-disabled
+        -u USER    --user    USER     default: default_username
+        EOH
+        exit 0
+      end
+
+      opts.on('-t', '--target TARGET') do |target|
+        @opts[:target] = target
+      end
+
+      opts.on('-d', '--debug') do
+        @opts[:debug] = true
+      end
+
+      opts.on('-g', '--git-update') do
+        @opts[:update] = true
+      end
+
+      opts.on('-l', '--list') do
+        @opts[:list] = true
+      end
+
+      opts.on('-f', '--feature FEATURE') do |feature|
+        @opts[:feature] = feature
+      end
+
+      opts.on('-p', '--profile PROFILE') do |profile|
+        @opts[:profile] = profile
+      end
+
+      opts.on('-u', '--user USER') do |user|
+        @opts[:user] = user
+      end
+    end.parse!
+  end
+
+  def run
+    parse_opts
+
+    Dir.chdir SCRIPT_ROOT
+
+    list_features && return if @opts[:list]
+
+    if @opts[:update]
+      update_cmd = 'git pull origin master'
+      system update_cmd
+      puts 'Test suite updated', ''
+    end
+
+    params = "TARGET=#{@opts[:target]} USER=#{@opts[:user]}"
+
+    if @opts[:debug]
+      params << 'SMOKE_DEBUG=true'
+    end
+
+    if @opts[:profile]
+      params << " -p #{@opts[:profile]} "
+    end
+
+    if @opts[:feature]
+      params << " features/#{@opts[:feature]}"
+    end
+
+    if RUBY_PLATFORM.downcase =~ /(darwin|win)/
+      cmd = "cucumber -f pretty #{params}"
+    else
+      cmd = "xvfb-run -a cucumber -f progress #{params}"
+    end
+
+    puts "#{$0} using TARGET=#{@opts[:target]}"
+    puts 'Check results on http://localhost:8081', ''
+
+    system cmd
+  end
+
+  def list_features
+    system 'cucumber --dry-run --format SummaryFormatter -p include-disabled'
+  end
+end
+
+SmokeTestRunner.main

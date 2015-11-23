@@ -1,0 +1,8 @@
+---
+users:
+  default_user:
+    username: smokeytester1@gmail.com
+    password: copy this file to users.yml and add the real password
+  my_user:
+    username: your personal account
+    password: abc123
